@@ -10,11 +10,15 @@ import (
 	"os"
 )
 
-func main() {
-	var configFile string
+var configFile string
+
+func init() {
 	flag.StringVar(&configFile, "config", "config.yaml", "config file location, use absolute path or relative path. make sure your current directory has config.yaml file if use default value.")
 	flag.Parse()
+}
 
+func main() {
+	//get config
 	var c config
 	conf := c.getConfig(configFile)
 
@@ -37,12 +41,10 @@ func main() {
 		fmt.Println("scan keys error:", err)
 		return
 	}
-	fmt.Println("matched keys:", keys)
-	fmt.Println("matched key num:", len(keys))
 
 	var answer string
 	//save data
-	fmt.Println("save data before delete keys? input y or n")
+	fmt.Println("save data before delete keys? [y or n]")
 	fmt.Scan(&answer)
 	if answer == "y" {
 		fmt.Println("start store data:")
@@ -50,7 +52,7 @@ func main() {
 	}
 
 	//delete keys
-	fmt.Println("are you sure delete these matched keys? input y or n:")
+	fmt.Println("are you sure delete these matched keys? [y or n]")
 	fmt.Scan(&answer)
 	if answer == "y" {
 		fmt.Println("start delete keys:")
@@ -72,6 +74,9 @@ type redisConfig struct {
 	Password string `yaml:"password"`
 }
 
+/**
+ * 导入配置文件
+ */
 func (c *config) getConfig(configFile string) *config {
 	yamlFile, err := ioutil.ReadFile(configFile)
 	if err != nil {
@@ -84,6 +89,9 @@ func (c *config) getConfig(configFile string) *config {
 	return c
 }
 
+/**
+ * 连接redis主从库
+ */
 func getRedisConnMasterSlave(confMaster redisConfig, confSlave redisConfig) (redis.Conn, redis.Conn, error) {
 	connMaster, err := getRedisConn(confMaster)
 	if err != nil {
@@ -105,6 +113,9 @@ func getRedisConnMasterSlave(confMaster redisConfig, confSlave redisConfig) (red
 	return connMaster, connSlave, nil
 }
 
+/**
+ * 连接redis
+ */
 func getRedisConn(conf redisConfig) (redis.Conn, error) {
 	redisAddress := fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 	conn, err := redis.Dial("tcp", redisAddress)
@@ -119,7 +130,17 @@ func getRedisConn(conf redisConfig) (redis.Conn, error) {
 	return conn, nil
 }
 
+/**
+ * 根据正则表达式查询redis key
+ */
 func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
+	//get total key count
+	totalCount, err := redis.Int(conn.Do("DBSIZE"))
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("start search keys by pattern %s:\n", pattern)
 	iter := 0
 	var keysMatch, keys []string
 	for i := 1; ; i++ {
@@ -129,7 +150,7 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 			iter, _ = redis.Int(arr[0], nil)
 			keys, _ = redis.Strings(arr[1], nil)
 		}
-		fmt.Printf("iter:%d  data:%v\n", i, keys)
+		fmt.Printf("process: %d%%\n", i*iterNum*100/totalCount)
 		if len(keys) > 0 {
 			keysMatch = append(keysMatch, keys...)
 		}
@@ -137,9 +158,16 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 			break
 		}
 	}
+	fmt.Println("matched keys:", keys)
+	fmt.Println("total key num:", totalCount)
+	fmt.Println("matched key num:", len(keys))
+
 	return keysMatch, nil
 }
 
+/**
+ * 删除redis key
+ */
 func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 	size := len(keys)
 	var part []string
@@ -161,6 +189,9 @@ func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 	return nil
 }
 
+/**
+ * 保存redis数据
+ */
 func storeData(conn redis.Conn, keys []string, filePath string) error {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
