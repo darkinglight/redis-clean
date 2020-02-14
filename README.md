@@ -1,7 +1,18 @@
-# redis数据清理工具
+# redis-clean tool
+
+## Build
+`make`
+this cammand will generate two excutable binary file in bin directory
+
+## Config
+put the config.yaml on where you execute this tool or you can load config by -config. config demo is config.yaml.
+1. relace the redis connect config with your host and so on.
+2. change the keys to your pattern, like test* can search testa, testb, test:set and so on.
+3. change iterNum if needed, this is number in redis command `scan iterator match pattern count iterNum`
+4. chagne deleteNum if needed, this is number of elements in redis command `del key1 key2 key3 ...`
 
 ## Usage
-1. 修改config.yaml参数
-2. 执行脚本
-3. 搜索出所有key后选择是否保存数据到本地，y保存到本地
-4. 保存完数据后选择是否删除匹配的key，y删除匹配的key
+redis-clean [-config "path/to/configfile.yaml"]
+
+## Help
+redis-clean -h
