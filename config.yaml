@@ -1,0 +1,16 @@
+# redis配置
+redisMaster:
+    host: localhost
+    port: 6379
+    password: 
+# redis从库配置，如果配置了从库，则查询数据从从库查询，线上服务压力较大时建议配置从库
+redisSlave:
+    host:
+    port:
+    password:
+# 需要删除的key的正则表达式
+keys: test*
+#一次查询的数量，可以配和dbsize查询redis key的数量，线上不宜设置过大，容易造成服务器卡顿
+iterNum: 10000
+#一次删除的key的数量
+deleteNum: 100
