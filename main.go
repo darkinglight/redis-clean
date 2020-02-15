@@ -35,30 +35,34 @@ func main() {
 		defer connMaster.Close()
 	}
 
+	var answer string
+
 	//find keys
 	keys, err := findKeys(connSlave, conf.Keys, conf.IterNum)
 	if err != nil {
 		fmt.Println("scan keys error:", err)
 		return
 	}
-
-	var answer string
-	//save data
-	fmt.Println("save data before delete keys? [y or n]")
+	fmt.Println("Show Matched Keys Detail? [y or n]")
 	fmt.Scan(&answer)
 	if answer == "y" {
-		fmt.Println("start store data:")
+		fmt.Println("Matched Keys:", keys)
+	}
+
+	//save data
+	fmt.Println("Save Data Before Delete Keys? [y or n]")
+	fmt.Scan(&answer)
+	if answer == "y" {
 		storeData(connSlave, keys, "data.txt")
 	}
 
 	//delete keys
-	fmt.Println("are you sure delete these matched keys? [y or n]")
+	fmt.Println("Delete Match Keys? [y or n]")
 	fmt.Scan(&answer)
 	if answer == "y" {
-		fmt.Println("start delete keys:")
 		deleteKeys(connMaster, keys, conf.DeleteNum)
 	}
-	fmt.Println("finished")
+	fmt.Println("Script Finish.")
 }
 
 type config struct {
@@ -144,7 +148,10 @@ func (p *process) Print(currentProcess int) {
 	}
 	if currentProcess > p.Value {
 		p.Value = currentProcess
-		fmt.Printf("%s Process: %d%%\n", p.Name, p.Value)
+		fmt.Printf("%s Process: %d%%\r", p.Name, p.Value)
+		if currentProcess == 100 {
+			fmt.Println()
+		}
 	}
 }
 
@@ -158,7 +165,9 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Search keys by pattern %s start:\n", pattern)
+	var searchProcess = process{"Search Key", 0}
+	fmt.Printf("Search Key By Pattern %s Start:\n", pattern)
+
 	iter := 0
 	var keysMatch, keys []string
 	for i := 1; ; i++ {
@@ -168,17 +177,15 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 			iter, _ = redis.Int(arr[0], nil)
 			keys, _ = redis.Strings(arr[1], nil)
 		}
-		fmt.Printf("process: %d%%\n", i*iterNum*100/totalCount)
 		if len(keys) > 0 {
 			keysMatch = append(keysMatch, keys...)
 		}
+		searchProcess.Print(i * iterNum * 100 / totalCount)
 		if iter == 0 {
 			break
 		}
 	}
-	fmt.Println("matched keys:", keysMatch)
-	fmt.Println("matched key num:", len(keysMatch))
-	fmt.Println("total key num:", totalCount)
+	fmt.Printf("Search Key Finish. Total Search Key Number: %d, Match Key Number: %d\n", totalCount, len(keysMatch))
 
 	return keysMatch, nil
 }
@@ -187,10 +194,12 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
  * 删除redis key
  */
 func deleteKeys(conn redis.Conn, keys []string, nums int) error {
+	var deleteProcess = process{"Delete Keys", 0}
+	fmt.Println("Delete Keys Start:")
+
 	size := len(keys)
 	var totalDeleteNum int
 	var part []string
-	fmt.Println("Delete matched keys start...")
 	for i := 0; i*nums < size; i++ {
 		if (i+1)*nums > size {
 			part = keys[i*nums:]
@@ -202,9 +211,9 @@ func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 			return err
 		}
 		totalDeleteNum += deleteNum
-		fmt.Printf("Process: %d%%\n", totalDeleteNum/size)
+		deleteProcess.Print(totalDeleteNum * 100 / size)
 	}
-	fmt.Printf("Delete finish. size:%d; deleted size:%d\n", size, totalDeleteNum)
+	fmt.Printf("Delete Keys Finish. Match Size:%d; Delete Size:%d\n", size, totalDeleteNum)
 	return nil
 }
 
@@ -221,6 +230,7 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	defer writer.Flush()
 
 	var storeProcess = process{"Store Data", 0}
+	fmt.Println("Store Data Start:")
 
 	size := len(keys)
 	var keyType string
@@ -228,7 +238,7 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	var dataSlice []string
 	var dataMap map[string]string
 	for i := 0; i < size; i++ {
-		storeProcess.Print(i * 100 / size)
+		storeProcess.Print((i + 1) * 100 / size)
 		if keyType, err = redis.String(conn.Do("TYPE", keys[i])); err != nil {
 			return err
 		}
@@ -260,5 +270,6 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 			fmt.Fprintln(writer, keys[i], dataSlice)
 		}
 	}
+	fmt.Println("Store Data Finish")
 	return nil
 }
