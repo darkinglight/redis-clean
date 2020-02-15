@@ -172,10 +172,10 @@ func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 	size := len(keys)
 	var part []string
 	for i := 0; i*nums < size; i++ {
-		if i+nums > size {
-			part = keys[i:]
+		if (i+1)*nums > size {
+			part = keys[i*nums:]
 		} else {
-			part = keys[i : i+nums]
+			part = keys[i*nums : (i+1)*nums]
 		}
 		deleteNum, err := redis.Int(conn.Do("DEL", redis.Args{}.AddFlat(part)...))
 		if err != nil {
