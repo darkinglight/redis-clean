@@ -131,6 +131,24 @@ func getRedisConn(conf redisConfig) (redis.Conn, error) {
 }
 
 /**
+ * 进度
+ */
+type process struct {
+	Name  string
+	Value int
+}
+
+func (p *process) Print(currentProcess int) {
+	if currentProcess > 100 {
+		currentProcess = 100
+	}
+	if currentProcess > p.Value {
+		p.Value = currentProcess
+		fmt.Printf("%s Process: %d%%\n", p.Name, p.Value)
+	}
+}
+
+/**
  * 根据正则表达式查询redis key
  */
 func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
@@ -140,7 +158,7 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 		return nil, err
 	}
 
-	fmt.Printf("start search keys by pattern %s:\n", pattern)
+	fmt.Printf("Search keys by pattern %s start:\n", pattern)
 	iter := 0
 	var keysMatch, keys []string
 	for i := 1; ; i++ {
@@ -158,9 +176,9 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 			break
 		}
 	}
-	fmt.Println("matched keys:", keys)
+	fmt.Println("matched keys:", keysMatch)
+	fmt.Println("matched key num:", len(keysMatch))
 	fmt.Println("total key num:", totalCount)
-	fmt.Println("matched key num:", len(keys))
 
 	return keysMatch, nil
 }
@@ -170,7 +188,9 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
  */
 func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 	size := len(keys)
+	var totalDeleteNum int
 	var part []string
+	fmt.Println("Delete matched keys start...")
 	for i := 0; i*nums < size; i++ {
 		if (i+1)*nums > size {
 			part = keys[i*nums:]
@@ -181,11 +201,10 @@ func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 		if err != nil {
 			return err
 		}
-		if deleteNum < size {
-			fmt.Printf("not all deleted. size:%d; deleted size:%d\n", size, deleteNum)
-		}
-		fmt.Println("keys deleted:", part)
+		totalDeleteNum += deleteNum
+		fmt.Printf("Process: %d%%\n", totalDeleteNum/size)
 	}
+	fmt.Printf("Delete finish. size:%d; deleted size:%d\n", size, totalDeleteNum)
 	return nil
 }
 
@@ -201,12 +220,15 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
+	var storeProcess = process{"Store Data", 0}
+
 	size := len(keys)
 	var keyType string
 	var data string
 	var dataSlice []string
 	var dataMap map[string]string
 	for i := 0; i < size; i++ {
+		storeProcess.Print(i * 100 / size)
 		if keyType, err = redis.String(conn.Do("TYPE", keys[i])); err != nil {
 			return err
 		}
