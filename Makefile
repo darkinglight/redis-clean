@@ -1,21 +1,26 @@
 CC=go build
 CFLAGS=-gcflags=all="-N -l"
+FILE=main.go config.go
 
+.PHONY:all
 all: bin/redis-clean bin/redis-clean.exe
-bin/redis-clean: main.go
-	$(CC) -o bin/redis-clean main.go
-bin/redis-clean.exe: main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(CC) -o bin/redis-clean.exe main.go
+bin/redis-clean: $(FILE)
+	$(CC) -o $@ $^
+bin/redis-clean.exe: $(FILE)
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(CC) -o $@ $^
 
-gdb-build: main.go
-	$(CC) -o bin/redis-clean $(CFLAGS) main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(CC) -o bin/redis-clean.exe $(CFLAGS) main.go
+.PHONY:gdb-build
+gdb-build: $(FILE)
+	$(CC) -o bin/redis-clean $(CFLAGS) $(FILE)
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(CC) -o bin/redis-clean.exe $(CFLAGS) $(FILE)
 
+.PHONY:tar
 tar: bin/redis-clean-linux.tar.gz bin/redis-clean-windows.tar.gz
 bin/redis-clean-linux.tar.gz: bin/redis-clean
-	tar -zcvf bin/redis-clean-linux.tar.gz config.yaml README.md -C bin redis-clean
+	tar -zcvf $@ config.yaml README.md -C bin redis-clean
 bin/redis-clean-windows.tar.gz: bin/redis-clean.exe
-	tar -zcvf bin/redis-clean-windows.tar.gz config.yaml README.md -C bin redis-clean.exe
+	tar -zcvf $@ config.yaml README.md -C bin redis-clean.exe
 
+.PHONY:clean
 clean:
 	rm -fr bin/*

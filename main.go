@@ -5,8 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"os"
 )
 
@@ -68,34 +66,6 @@ func main() {
 		deleteKeys(connMaster, keys, conf.DeleteNum)
 	}
 	fmt.Println("Script Finish.")
-}
-
-type config struct {
-	RedisMaster redisConfig `yaml:"redisMaster"`
-	RedisSlave  redisConfig `yaml:"redisSlave"`
-	Keys        string      `yaml:"keys"`
-	IterNum     int         `yaml:"iterNum"`
-	DeleteNum   int         `yaml:"deleteNum"`
-}
-type redisConfig struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Password string `yaml:"password"`
-}
-
-/**
- * 导入配置文件
- */
-func (c *config) getConfig(configFile string) (*config, error) {
-	yamlFile, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, err
-	}
-	err = yaml.Unmarshal(yamlFile, c)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 /**

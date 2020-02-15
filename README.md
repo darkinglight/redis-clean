@@ -1,13 +1,14 @@
 [简体中文](README.md) ∙ [English](README-en.md)
 
-# redis-clean tool
-This is tool for deleting redis keys by regular expression.
+# redis清理工具
+> 使用正则表达式查询清理redis key。
+> 本工具尤其适用于redis key数量>千万，CGI工具查询较慢的情况
+> 也可以用来批量保存数据到本地
 
-## Build
-`make`
-this cammand will generate two excutable binary file in bin directory.
+## 编译
+在根目录执行`make`，会生成bin目录，并在bin目录生成linux可执行文件redis-clean和windows可执行文件redis-clean.exe 
 
-## Config
+## 配置
 put the config.yaml on where you execute this tool or you can load config by -config. config demo is config.yaml.
 1. relace the redis connect config with your host and so on.
 2. change the keys to your pattern, like test* can search testa, testb, test:set and so on.
