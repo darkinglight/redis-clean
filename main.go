@@ -20,7 +20,12 @@ func init() {
 func main() {
 	//get config
 	var c config
-	conf := c.getConfig(configFile)
+	conf, err := c.getConfig(configFile)
+	if err != nil {
+		fmt.Println(err.Error())
+		flag.Usage()
+		return
+	}
 
 	//connect to redis
 	connMaster, connSlave, err := getRedisConnMasterSlave(conf.RedisMaster, conf.RedisSlave)
@@ -81,16 +86,16 @@ type redisConfig struct {
 /**
  * 导入配置文件
  */
-func (c *config) getConfig(configFile string) *config {
+func (c *config) getConfig(configFile string) (*config, error) {
 	yamlFile, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		fmt.Println(err.Error())
+		return nil, err
 	}
 	err = yaml.Unmarshal(yamlFile, c)
 	if err != nil {
-		fmt.Println(err.Error())
+		return nil, err
 	}
-	return c
+	return c, nil
 }
 
 /**

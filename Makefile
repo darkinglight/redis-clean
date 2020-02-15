@@ -13,9 +13,9 @@ gdb-build: main.go
 
 tar: bin/redis-clean-linux.tar.gz bin/redis-clean-windows.tar.gz
 bin/redis-clean-linux.tar.gz: bin/redis-clean
-	tar -zcvf bin/redis-clean-linux.tar.gz config.yaml bin/redis-clean README.md
+	tar -zcvf bin/redis-clean-linux.tar.gz config.yaml README.md -C bin redis-clean
 bin/redis-clean-windows.tar.gz: bin/redis-clean.exe
-	tar -zcvf bin/redis-clean-windows.tar.gz config.yaml bin/redis-clean.exe README.md
+	tar -zcvf bin/redis-clean-windows.tar.gz config.yaml README.md -C bin redis-clean.exe
 
 clean:
 	rm -fr bin/*
