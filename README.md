@@ -6,7 +6,7 @@
 > 也可以用来批量保存数据到本地。 
 
 ## 配置
-    默认加载的配置文件名为config.yaml, 可以通过-config参数执行你自己的配置文件  
+默认加载的配置文件名为config.yaml, 可以通过-config参数执行你自己的配置文件  
 配置文件默认的加载路径如下：  
 1. -config参数的绝对路径
 2. 当前工作目录的相对路径
@@ -33,7 +33,7 @@ redis-clean [-config "path/to/configfile.yaml"]
 redis-clean -h
 
 ## 测试
-> 使用命令`eq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`添加测试数据
+> 使用命令`eq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`添加测试数据 
 > 执行本脚本进行测试
 
 
