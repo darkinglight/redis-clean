@@ -22,7 +22,7 @@
 在根目录执行`make`，会生成bin目录，并在bin目录生成linux可执行文件redis-clean和windows可执行文件redis-clean.exe 
 
 ## 使用
-redis-clean [-config "path/to/configfile.yaml"] 
+redis-clean [-config "path/to/configfile.yaml"]  
 主要流程如下：
 1. 查找redis key：根据配置的正则表达式，使用redis命令`scan iter match pattern count iterNum`进行key的查找
 2. 展示匹配的key：如果输入'y'，列出所有匹配的key
