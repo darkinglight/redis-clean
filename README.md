@@ -2,34 +2,39 @@
 
 # redis清理工具
 > 使用正则表达式查询清理redis key。
-> 本工具尤其适用于redis key数量>千万，CGI工具查询较慢的情况
-> 也可以用来批量保存数据到本地
-
-## 编译
-在根目录执行`make`，会生成bin目录，并在bin目录生成linux可执行文件redis-clean和windows可执行文件redis-clean.exe 
+> 本工具尤其适用于redis key数量>千万，CGI工具查询较慢的情况。 
+> 也可以用来批量保存数据到本地。 
 
 ## 配置
-put the config.yaml on where you execute this tool or you can load config by -config. config demo is config.yaml.
-1. relace the redis connect config with your host and so on.
-2. change the keys to your pattern, like test* can search testa, testb, test:set and so on.
-3. change iterNum if needed, this is number in redis command `scan iterator match pattern count iterNum`.
-4. chagne deleteNum if needed, this is number of elements in redis command `del key1 key2 key3 ...`.
+默认加载的配置文件名为config.yaml, 可以通过-config参数执行你自己的配置文件  
+配置文件默认的加载路径如下：  
+1. -config参数的绝对路径
+2. 当前工作目录的相对路径
+3. 可执行文件目录的相对路径
+执行程序前需要更新的配置：
+1. 替换默认的redis配置替换为目标redis配置，slave从库配置可以不配置，但会增加主库的查询压力
+2. 更新需要查找的key的正则表达式，如：需要查找testA,testB,testC,则配置test*
+3. 如果需要可以更改iterNum的值,控制单次查询redis遍历的key的数量，值越大，单次查询阻塞越久，默认值10000
+4. 如果需要可以更改deleteNum的值，控制单次删除key的数量，值越大，单次阻塞越久，默认值100
 
-## Usage
+## 安装
+在根目录执行`make`，会生成bin目录，并在bin目录生成linux可执行文件redis-clean和windows可执行文件redis-clean.exe 
+
+## 使用
 redis-clean [-config "path/to/configfile.yaml"]
-### find keys
-this script will search redis db by `scan iter match pattern count iterNum`
-### save data
+### 查找redis key
+根据配置的正则表达式，使用redis命令`scan iter match pattern count iterNum`进行key的查找
+### 保存redis数据
 you can save data to local file after search all keys if you choose 'y'
-### delete keys
+### 删除redis key
 you can delete all searched keys after saving data if you choose 'y'
 
-## Help
+## 帮助
 redis-clean -h
 
-## Test
+## 测试
 you can use this command produce test redis data   
 `eq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`
 
-## Issue
-1. don't test saving data which is very big.
+## 相关问题
+1. 尚未对大容量的redis数据存储进行测试，可能存在问题。
