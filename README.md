@@ -29,11 +29,33 @@ redis-clean [-config "path/to/configfile.yaml"]
 3. 保存redis数据：如果输入'y'，会保存匹配的key的数据到当前目录的data.txt文件
 4. 删除redis key: 如果输入'y'，会删除匹配的key
 
+实际使用界面如下：
+```
+@:~/redis-clean$ bin/redis-clean
+connect to redis master suucess.
+Search Key By Pattern test* Start:
+Search Key Process: 100%
+Search Key Finish. Total Search Key Number: 100009, Match Key Number: 100000
+Show Matched Keys Detail? [y or n]
+n
+Save Data Before Delete Keys? [y or n]
+y
+Store Data Start:
+Store Data Process: 100%
+Store Data Finish
+Delete Match Keys? [y or n]
+y
+Delete Keys Start:
+Delete Keys Process: 100%
+Delete Keys Finish. Match Size:100000; Delete Size:100000
+Script Finish.
+```
+
 ## 帮助
 redis-clean -h
 
 ## 测试
-> 使用命令`eq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`添加测试数据  
+> 使用命令`seq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`添加测试数据  
 > 执行本脚本进行测试
 
 
