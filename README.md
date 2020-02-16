@@ -6,11 +6,12 @@
 > 也可以用来批量保存数据到本地。 
 
 ## 配置
-默认加载的配置文件名为config.yaml, 可以通过-config参数执行你自己的配置文件  
+    默认加载的配置文件名为config.yaml, 可以通过-config参数执行你自己的配置文件  
 配置文件默认的加载路径如下：  
 1. -config参数的绝对路径
 2. 当前工作目录的相对路径
 3. 可执行文件目录的相对路径
+
 执行程序前需要更新的配置：
 1. 替换默认的redis配置替换为目标redis配置，slave从库配置可以不配置，但会增加主库的查询压力
 2. 更新需要查找的key的正则表达式，如：需要查找testA,testB,testC,则配置test*
@@ -22,19 +23,19 @@
 
 ## 使用
 redis-clean [-config "path/to/configfile.yaml"]
-### 查找redis key
-根据配置的正则表达式，使用redis命令`scan iter match pattern count iterNum`进行key的查找
-### 保存redis数据
-you can save data to local file after search all keys if you choose 'y'
-### 删除redis key
-you can delete all searched keys after saving data if you choose 'y'
+主要流程如下：
+1. 查找redis key：根据配置的正则表达式，使用redis命令`scan iter match pattern count iterNum`进行key的查找
+2. 展示匹配的key：如果输入'y'，列出所有匹配的key
+3. 保存redis数据：如果输入'y'，会保存匹配的key的数据到当前目录的data.txt文件
+4. 删除redis key: 如果输入'y'，会删除匹配的key
 
 ## 帮助
 redis-clean -h
 
 ## 测试
-you can use this command produce test redis data   
-`eq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`
+> 使用命令`eq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`添加测试数据
+> 执行本脚本进行测试
+
 
 ## 相关问题
 1. 尚未对大容量的redis数据存储进行测试，可能存在问题。
