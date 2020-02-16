@@ -1,6 +1,6 @@
 CC=go build
 CFLAGS=-gcflags=all="-N -l"
-FILE=main.go config.go
+FILE=main.go config.go process.go redis.go
 
 .PHONY:all
 all: bin/redis-clean bin/redis-clean.exe
