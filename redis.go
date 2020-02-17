@@ -163,6 +163,42 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 			fmt.Fprintln(writer, keys[i], dataSlice)
 		}
 	}
+
+	//get type of all keys
+	var dataNum int = 0
+	var stringKeys, listKeys, zsetKeys, hashKeys, setKeys []string
+	for i := 0; i < size; i++ {
+		conn.Send("TYPE", keys[i])
+		dataNum++
+
+		if dataNum%100 == 0 || i == size-1 {
+			conn.Flush()
+			for j := 0; j < dataNum; j++ {
+				if v, err := conn.Receive(); err != nil {
+					return err
+				}
+				if keyType, err = redis.String(v); err != nil {
+					return err
+				}
+				switch keyType {
+				case "string":
+					stringKeys = append(stringKeys, keys[i])
+				case "list":
+					listKeys = append(listKeys, keys[i])
+				case "zset":
+					zsetKeys = append(zsetKeys, keys[i])
+				case "hash":
+					hashKeys = append(hashKeys, keys[i])
+				case "set":
+					setKeys = append(setKeys, keys[i])
+				}
+			}
+			dataNum = 0
+		}
+	}
+
+	//fetch data by pipeline
+
 	fmt.Println("Store Data Finish")
 	return nil
 }
