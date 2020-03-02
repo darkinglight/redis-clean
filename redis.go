@@ -122,52 +122,14 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
-	var storeProcess = process{"Store Data", 0}
-	fmt.Println("Store Data Start:")
-
-	size := len(keys)
-	var keyType string
-	var data string
-	var dataSlice []string
-	var dataMap map[string]string
-	for i := 0; i < size; i++ {
-		storeProcess.Print((i + 1) * 100 / size)
-		if keyType, err = redis.String(conn.Do("TYPE", keys[i])); err != nil {
-			return err
-		}
-		switch keyType {
-		case "string":
-			if data, err = redis.String(conn.Do("GET", keys[i])); err != nil {
-				return err
-			}
-			fmt.Fprintln(writer, keys[i], data)
-		case "list":
-			if dataSlice, err = redis.Strings(conn.Do("LRANGE", keys[i], 0, -1)); err != nil {
-				return err
-			}
-			fmt.Fprintln(writer, keys[i], dataSlice)
-		case "zset":
-			if dataMap, err = redis.StringMap(conn.Do("ZRANGE", keys[i], 0, -1, "WITHSCORES")); err != nil {
-				return err
-			}
-			fmt.Fprintln(writer, keys[i], dataMap)
-		case "hash":
-			if dataMap, err = redis.StringMap(conn.Do("HGETALL", keys[i])); err != nil {
-				return err
-			}
-			fmt.Fprintln(writer, keys[i], dataMap)
-		case "set":
-			if dataSlice, err = redis.Strings(conn.Do("SMEMBERS", keys[i])); err != nil {
-				return err
-			}
-			fmt.Fprintln(writer, keys[i], dataSlice)
-		}
-	}
-
 	//get type of all keys
+	var storeProcess = process{"Store Data", 0}
+	fmt.Println("Store Data Get Key Type Start:")
 	var dataNum int = 0
+	var keyType string
 	var stringKeys, listKeys, zsetKeys, hashKeys, setKeys []string
 	for i := 0; i < size; i++ {
+		storeProcess.Print((i + 1) * 100 / size)
 		conn.Send("TYPE", keys[i])
 		dataNum++
 
@@ -198,7 +160,122 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	}
 
 	//fetch data by pipeline
+	fetchString(stringKeys, writer)
+	fetchList(listKeys, writer)
+	fetchZset(zsetKeys, writer)
+	fetchHash(hashKeys, writer)
+	fetchSet(setKeys, writer)
 
 	fmt.Println("Store Data Finish")
 	return nil
+}
+
+func fetchString(keys []string, writer *bufio.Writer) bool {
+	keysLen := len(keys)
+	currentNum := 0
+	for i, key := range keys {
+		conn.Send("GET", key)
+		currentNum++
+		if currentNum%100 == 0 || i-1 == stringKeysLen {
+			conn.Flush()
+			for j := 0; j < currentNum; j++ {
+				if v, err := conn.Receive(); err != nil {
+					return err
+				}
+				if data, err := redis.String(v); err != nil {
+					return err
+				}
+				fmt.Fprintln(writer, keys[i], data)
+			}
+			currentNum = 0
+		}
+	}
+}
+
+func fetchList(keys []string, writer *bufio.Writer) bool {
+	keysLen := len(keys)
+	currentNum := 0
+	for i, key := range keys {
+		conn.Send("LRANGE", key, 0, -1)
+		currentNum++
+		if currentNum%100 == 0 || i-1 == stringKeysLen {
+			conn.Flush()
+			for j := 0; j < currentNum; j++ {
+				if v, err := conn.Receive(); err != nil {
+					return err
+				}
+				if data, err := redis.Strings(v); err != nil {
+					return err
+				}
+				fmt.Fprintln(writer, keys[i], data)
+			}
+			currentNum = 0
+		}
+	}
+}
+
+func fetchZset(keys []string, writer *bufio.Writer) bool {
+	keysLen := len(keys)
+	currentNum := 0
+	for i, key := range keys {
+		conn.Send("ZRANGE", key, 0, -1, "WITHSCORES")
+		currentNum++
+		if currentNum%100 == 0 || i-1 == stringKeysLen {
+			conn.Flush()
+			for j := 0; j < currentNum; j++ {
+				if v, err := conn.Receive(); err != nil {
+					return err
+				}
+				if data, err := redis.StringMap(v); err != nil {
+					return err
+				}
+				fmt.Fprintln(writer, keys[i], data)
+			}
+			currentNum = 0
+		}
+	}
+}
+
+func fetchHash(keys []string, writer *bufio.Writer) bool {
+	keysLen := len(keys)
+	currentNum := 0
+	for i, key := range keys {
+		conn.Send("HGETALL", key)
+		currentNum++
+		if currentNum%100 == 0 || i-1 == stringKeysLen {
+			conn.Flush()
+			for j := 0; j < currentNum; j++ {
+				if v, err := conn.Receive(); err != nil {
+					return err
+				}
+				if data, err := redis.StringMap(v); err != nil {
+					return err
+				}
+				fmt.Fprintln(writer, keys[i], data)
+			}
+			currentNum = 0
+		}
+	}
+}
+
+func fetchSet(keys []string, writer *bufio.Writer) bool {
+	keysLen := len(keys)
+	currentNum := 0
+	for i, key := range keys {
+		conn.Send("SMEMBERS", key)
+		currentNum++
+		if currentNum%100 == 0 || i-1 == stringKeysLen {
+			conn.Flush()
+			for j := 0; j < currentNum; j++ {
+				if v, err := conn.Receive(); err != nil {
+					return err
+				}
+				if data, err := redis.Strings(v); err != nil {
+					return err
+				}
+				fmt.Fprintln(writer, keys[i], data)
+			}
+			currentNum = 0
+		}
+	}
 }
