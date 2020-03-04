@@ -12,6 +12,12 @@ type process struct {
 	Value int
 }
 
+func NewProcess(name string) *process {
+	p := &process{name, 0}
+	fmt.Printf("%s Start:\n", p.Name)
+	return p
+}
+
 func (p *process) Print(currentProcess int) {
 	if currentProcess > 100 {
 		currentProcess = 100

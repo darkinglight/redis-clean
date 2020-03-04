@@ -50,7 +50,7 @@ func main() {
 	}
 
 	//save data
-	fmt.Println("Save Data Before Delete Keys? [y or n]")
+	fmt.Println("Save Data To data.txt Before Delete Keys? [y or n]")
 	fmt.Scan(&answer)
 	if answer == "y" {
 		storeData(connSlave, keys, "data.txt")
