@@ -123,37 +123,9 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	defer writer.Flush()
 
 	//get type of all keys
-	var storeProcess = process{"Store Data Get Key Type", 0}
-	var dataNum int = 0
-	var keyType string
-	var stringKeys, listKeys, zsetKeys, hashKeys, setKeys []string
-	size := len(keys)
-	for i := 0; i < size; i++ {
-		storeProcess.Print((i + 1) * 100 / size)
-		conn.Send("TYPE", keys[i])
-		dataNum++
-
-		if dataNum%100 == 0 || i == size-1 {
-			conn.Flush()
-			for j := 0; j < dataNum; j++ {
-				if keyType, err = redis.String(conn.Receive()); err != nil {
-					return err
-				}
-				switch keyType {
-				case "string":
-					stringKeys = append(stringKeys, keys[i])
-				case "list":
-					listKeys = append(listKeys, keys[i])
-				case "zset":
-					zsetKeys = append(zsetKeys, keys[i])
-				case "hash":
-					hashKeys = append(hashKeys, keys[i])
-				case "set":
-					setKeys = append(setKeys, keys[i])
-				}
-			}
-			dataNum = 0
-		}
+	stringKeys, listKeys, zsetKeys, hashKeys, setKeys, err := getType(conn, keys)
+	if err != nil {
+		return err
 	}
 
 	//fetch data by pipeline
@@ -175,6 +147,41 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 
 	fmt.Println("Store Data Finish")
 	return nil
+}
+
+func getType(conn redis.Conn, keys []string) ([]string, []string, []string, []string, []string, error) {
+	var typeProcess = process{"Store Data Get Key Type", 0}
+	var dataNum int = 0
+	var stringKeys, listKeys, zsetKeys, hashKeys, setKeys []string
+	size := len(keys)
+	for i := 0; i < size; i++ {
+		typeProcess.Print((i + 1) * 100 / size)
+		conn.Send("TYPE", keys[i])
+		dataNum++
+		if dataNum%100 == 0 || i == size-1 {
+			conn.Flush()
+			for j := 0; j < dataNum; j++ {
+				keyType, err := redis.String(conn.Receive())
+				if err != nil {
+					return nil, nil, nil, nil, nil, err
+				}
+				switch keyType {
+				case "string":
+					stringKeys = append(stringKeys, keys[i])
+				case "list":
+					listKeys = append(listKeys, keys[i])
+				case "zset":
+					zsetKeys = append(zsetKeys, keys[i])
+				case "hash":
+					hashKeys = append(hashKeys, keys[i])
+				case "set":
+					setKeys = append(setKeys, keys[i])
+				}
+			}
+			dataNum = 0
+		}
+	}
+	return stringKeys, listKeys, zsetKeys, hashKeys, setKeys, nil
 }
 
 func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer) error {
