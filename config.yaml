@@ -12,5 +12,9 @@ redisSlave:
 keys: test*
 #一次查询的数量，可以配和dbsize查询redis key的数量，线上不宜设置过大，容易造成服务器卡顿
 iterNum: 10000
+# 一次查询字段类型的数量，保存数据时使用
+fetchTypeNum: 10000
+# 一次查询数据的数量，保存数据时使用
+fetchDataNum: 100
 #一次删除的key的数量
 deleteNum: 100

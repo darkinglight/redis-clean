@@ -8,11 +8,13 @@ import (
 )
 
 type config struct {
-	RedisMaster redisConfig `yaml:"redisMaster"`
-	RedisSlave  redisConfig `yaml:"redisSlave"`
-	Keys        string      `yaml:"keys"`
-	IterNum     int         `yaml:"iterNum"`
-	DeleteNum   int         `yaml:"deleteNum"`
+	RedisMaster  redisConfig `yaml:"redisMaster"`
+	RedisSlave   redisConfig `yaml:"redisSlave"`
+	Keys         string      `yaml:"keys"`
+	IterNum      int         `yaml:"iterNum"`
+	FetchTypeNum int         `yaml:"fetchTypeNum"`
+	FetchDataNum int         `yaml:"fetchDataNum"`
+	DeleteNum    int         `yaml:"deleteNum"`
 }
 type redisConfig struct {
 	Host     string `yaml:"host"`

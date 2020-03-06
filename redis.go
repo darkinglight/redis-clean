@@ -111,7 +111,7 @@ func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 /**
  * 保存redis数据
  */
-func storeData(conn redis.Conn, keys []string, filePath string) error {
+func storeData(conn redis.Conn, keys []string, filePath string, typeNum int, dataNum int) error {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -121,25 +121,25 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	defer writer.Flush()
 
 	//get type of all keys
-	stringKeys, listKeys, zsetKeys, hashKeys, setKeys, err := getType(conn, keys)
+	stringKeys, listKeys, zsetKeys, hashKeys, setKeys, err := getType(conn, keys, typeNum)
 	if err != nil {
 		return err
 	}
 
 	//fetch data by pipeline
-	if err = fetchString(conn, stringKeys, writer); err != nil {
+	if err = fetchString(conn, stringKeys, writer, dataNum); err != nil {
 		return err
 	}
-	if err = fetchList(conn, listKeys, writer); err != nil {
+	if err = fetchList(conn, listKeys, writer, dataNum); err != nil {
 		return err
 	}
-	if err = fetchZset(conn, zsetKeys, writer); err != nil {
+	if err = fetchZset(conn, zsetKeys, writer, dataNum); err != nil {
 		return err
 	}
-	if err = fetchHash(conn, hashKeys, writer); err != nil {
+	if err = fetchHash(conn, hashKeys, writer, dataNum); err != nil {
 		return err
 	}
-	if err = fetchSet(conn, setKeys, writer); err != nil {
+	if err = fetchSet(conn, setKeys, writer, dataNum); err != nil {
 		return err
 	}
 
@@ -147,7 +147,7 @@ func storeData(conn redis.Conn, keys []string, filePath string) error {
 	return nil
 }
 
-func getType(conn redis.Conn, keys []string) ([]string, []string, []string, []string, []string, error) {
+func getType(conn redis.Conn, keys []string, num int) ([]string, []string, []string, []string, []string, error) {
 	var typeProcess = NewProcess("Store Data Get Key Type")
 	var dataNum int = 0
 	var stringKeys, listKeys, zsetKeys, hashKeys, setKeys []string
@@ -156,7 +156,7 @@ func getType(conn redis.Conn, keys []string) ([]string, []string, []string, []st
 		typeProcess.Print((i + 1) * 100 / size)
 		conn.Send("TYPE", keys[i])
 		dataNum++
-		if dataNum%100 == 0 || i == size-1 {
+		if dataNum%num == 0 || i == size-1 {
 			conn.Flush()
 			for j := 0; j < dataNum; j++ {
 				keyType, err := redis.String(conn.Receive())
@@ -165,15 +165,15 @@ func getType(conn redis.Conn, keys []string) ([]string, []string, []string, []st
 				}
 				switch keyType {
 				case "string":
-					stringKeys = append(stringKeys, keys[i])
+					stringKeys = append(stringKeys, keys[i-dataNum+j+1])
 				case "list":
-					listKeys = append(listKeys, keys[i])
+					listKeys = append(listKeys, keys[i-dataNum+j+1])
 				case "zset":
-					zsetKeys = append(zsetKeys, keys[i])
+					zsetKeys = append(zsetKeys, keys[i-dataNum+j+1])
 				case "hash":
-					hashKeys = append(hashKeys, keys[i])
+					hashKeys = append(hashKeys, keys[i-dataNum+j+1])
 				case "set":
-					setKeys = append(setKeys, keys[i])
+					setKeys = append(setKeys, keys[i-dataNum+j+1])
 				}
 			}
 			dataNum = 0
@@ -182,7 +182,7 @@ func getType(conn redis.Conn, keys []string) ([]string, []string, []string, []st
 	return stringKeys, listKeys, zsetKeys, hashKeys, setKeys, nil
 }
 
-func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer) error {
+func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
 	var stringProcess = NewProcess("Store String Data")
 	keysLen := len(keys)
 	currentNum := 0
@@ -190,14 +190,14 @@ func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 		stringProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("GET", key)
 		currentNum++
-		if currentNum%100 == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i-1 == keysLen {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.String(conn.Receive())
 				if err != nil {
 					return err
 				}
-				fmt.Fprintln(writer, keys[i], data)
+				fmt.Fprintln(writer, keys[i-currentNum+j+1], data)
 			}
 			currentNum = 0
 		}
@@ -205,7 +205,7 @@ func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 	return nil
 }
 
-func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer) error {
+func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
 	var listProcess = NewProcess("Store List Data")
 	keysLen := len(keys)
 	currentNum := 0
@@ -213,7 +213,7 @@ func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 		listProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("LRANGE", key, 0, -1)
 		currentNum++
-		if currentNum%100 == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i-1 == keysLen {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.Strings(conn.Receive())
@@ -228,7 +228,7 @@ func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 	return nil
 }
 
-func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer) error {
+func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
 	var zsetProcess = NewProcess("Store Zset Data")
 	keysLen := len(keys)
 	currentNum := 0
@@ -236,7 +236,7 @@ func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 		zsetProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("ZRANGE", key, 0, -1, "WITHSCORES")
 		currentNum++
-		if currentNum%100 == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i-1 == keysLen {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.StringMap(conn.Receive())
@@ -251,7 +251,7 @@ func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 	return nil
 }
 
-func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer) error {
+func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
 	var hashProcess = NewProcess("Store Hash Data")
 	keysLen := len(keys)
 	currentNum := 0
@@ -259,7 +259,7 @@ func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 		hashProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("HGETALL", key)
 		currentNum++
-		if currentNum%100 == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i-1 == keysLen {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.StringMap(conn.Receive())
@@ -274,7 +274,7 @@ func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 	return nil
 }
 
-func fetchSet(conn redis.Conn, keys []string, writer *bufio.Writer) error {
+func fetchSet(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
 	var setProcess = NewProcess("Store Set Data")
 	keysLen := len(keys)
 	currentNum := 0
@@ -282,7 +282,7 @@ func fetchSet(conn redis.Conn, keys []string, writer *bufio.Writer) error {
 		setProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("SMEMBERS", key)
 		currentNum++
-		if currentNum%100 == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i-1 == keysLen {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.Strings(conn.Receive())
