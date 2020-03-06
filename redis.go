@@ -220,7 +220,7 @@ func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 				if err != nil {
 					return err
 				}
-				fmt.Fprintln(writer, keys[i], data)
+				fmt.Fprintln(writer, keys[i-currentNum+j+1], data)
 			}
 			currentNum = 0
 		}
@@ -243,7 +243,7 @@ func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 				if err != nil {
 					return err
 				}
-				fmt.Fprintln(writer, keys[i], data)
+				fmt.Fprintln(writer, keys[i-currentNum+j+1], data)
 			}
 			currentNum = 0
 		}
@@ -266,7 +266,7 @@ func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 				if err != nil {
 					return err
 				}
-				fmt.Fprintln(writer, keys[i], data)
+				fmt.Fprintln(writer, keys[i-currentNum+j+1], data)
 			}
 			currentNum = 0
 		}
@@ -289,7 +289,7 @@ func fetchSet(conn redis.Conn, keys []string, writer *bufio.Writer, num int) err
 				if err != nil {
 					return err
 				}
-				fmt.Fprintln(writer, keys[i], data)
+				fmt.Fprintln(writer, keys[i-currentNum+j+1], data)
 			}
 			currentNum = 0
 		}
