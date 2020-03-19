@@ -190,7 +190,7 @@ func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer, num int) 
 		stringProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("GET", key)
 		currentNum++
-		if currentNum%num == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i == keysLen-1 {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.String(conn.Receive())
@@ -213,7 +213,7 @@ func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 		listProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("LRANGE", key, 0, -1)
 		currentNum++
-		if currentNum%num == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i == keysLen-1 {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.Strings(conn.Receive())
@@ -236,7 +236,7 @@ func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 		zsetProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("ZRANGE", key, 0, -1, "WITHSCORES")
 		currentNum++
-		if currentNum%num == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i == keysLen-1 {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.StringMap(conn.Receive())
@@ -259,7 +259,7 @@ func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 		hashProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("HGETALL", key)
 		currentNum++
-		if currentNum%num == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i == keysLen-1 {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.StringMap(conn.Receive())
@@ -282,7 +282,7 @@ func fetchSet(conn redis.Conn, keys []string, writer *bufio.Writer, num int) err
 		setProcess.Print((i + 1) * 100 / keysLen)
 		conn.Send("SMEMBERS", key)
 		currentNum++
-		if currentNum%num == 0 || i-1 == keysLen {
+		if currentNum%num == 0 || i == keysLen-1 {
 			conn.Flush()
 			for j := 0; j < currentNum; j++ {
 				data, err := redis.Strings(conn.Receive())
