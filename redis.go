@@ -58,7 +58,7 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 		return nil, err
 	}
 
-	var searchProcess = NewProcess(fmt.Sprintf("Search Key By Pattern %s", pattern))
+	var searchProcess = NewProcess(fmt.Sprintf("Search Key By Pattern %s", pattern), totalCount)
 
 	iter := 0
 	var keysMatch, keys []string
@@ -72,7 +72,7 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 		if len(keys) > 0 {
 			keysMatch = append(keysMatch, keys...)
 		}
-		searchProcess.Print(i * iterNum * 100 / totalCount)
+		searchProcess.Print(i * iterNum)
 		if iter == 0 {
 			break
 		}
@@ -86,11 +86,10 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
  * 删除redis key
  */
 func deleteKeys(conn redis.Conn, keys []string, nums int) error {
-	var deleteProcess = NewProcess("Delete Keys")
-
 	size := len(keys)
 	var totalDeleteNum int
 	var part []string
+	var deleteProcess = NewProcess("Delete Keys", size)
 	for i := 0; i*nums < size; i++ {
 		if (i+1)*nums > size {
 			part = keys[i*nums:]
@@ -102,7 +101,7 @@ func deleteKeys(conn redis.Conn, keys []string, nums int) error {
 			return err
 		}
 		totalDeleteNum += deleteNum
-		deleteProcess.Print(totalDeleteNum * 100 / size)
+		deleteProcess.Print(totalDeleteNum)
 	}
 	fmt.Printf("Delete Keys Finish. Match Size:%d; Delete Size:%d\n", size, totalDeleteNum)
 	return nil
@@ -148,12 +147,12 @@ func storeData(conn redis.Conn, keys []string, filePath string, typeNum int, dat
 }
 
 func getType(conn redis.Conn, keys []string, num int) ([]string, []string, []string, []string, []string, error) {
-	var typeProcess = NewProcess("Store Data Get Key Type")
 	var dataNum int = 0
 	var stringKeys, listKeys, zsetKeys, hashKeys, setKeys []string
 	size := len(keys)
+	var typeProcess = NewProcess("Store Data Get Key Type", size)
 	for i := 0; i < size; i++ {
-		typeProcess.Print((i + 1) * 100 / size)
+		typeProcess.Print(i + 1)
 		conn.Send("TYPE", keys[i])
 		dataNum++
 		if dataNum%num == 0 || i == size-1 {
@@ -183,11 +182,11 @@ func getType(conn redis.Conn, keys []string, num int) ([]string, []string, []str
 }
 
 func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
-	var stringProcess = NewProcess("Store String Data")
 	keysLen := len(keys)
 	currentNum := 0
+	var stringProcess = NewProcess("Store String Data", keysLen)
 	for i, key := range keys {
-		stringProcess.Print((i + 1) * 100 / keysLen)
+		stringProcess.Print(i + 1)
 		conn.Send("GET", key)
 		currentNum++
 		if currentNum%num == 0 || i == keysLen-1 {
@@ -206,11 +205,11 @@ func fetchString(conn redis.Conn, keys []string, writer *bufio.Writer, num int) 
 }
 
 func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
-	var listProcess = NewProcess("Store List Data")
 	keysLen := len(keys)
 	currentNum := 0
+	var listProcess = NewProcess("Store List Data", keysLen)
 	for i, key := range keys {
-		listProcess.Print((i + 1) * 100 / keysLen)
+		listProcess.Print(i + 1)
 		conn.Send("LRANGE", key, 0, -1)
 		currentNum++
 		if currentNum%num == 0 || i == keysLen-1 {
@@ -229,11 +228,11 @@ func fetchList(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 }
 
 func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
-	var zsetProcess = NewProcess("Store Zset Data")
 	keysLen := len(keys)
 	currentNum := 0
+	var zsetProcess = NewProcess("Store Zset Data", keysLen)
 	for i, key := range keys {
-		zsetProcess.Print((i + 1) * 100 / keysLen)
+		zsetProcess.Print(i + 1)
 		conn.Send("ZRANGE", key, 0, -1, "WITHSCORES")
 		currentNum++
 		if currentNum%num == 0 || i == keysLen-1 {
@@ -252,11 +251,11 @@ func fetchZset(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 }
 
 func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
-	var hashProcess = NewProcess("Store Hash Data")
 	keysLen := len(keys)
 	currentNum := 0
+	var hashProcess = NewProcess("Store Hash Data", keysLen)
 	for i, key := range keys {
-		hashProcess.Print((i + 1) * 100 / keysLen)
+		hashProcess.Print(i + 1)
 		conn.Send("HGETALL", key)
 		currentNum++
 		if currentNum%num == 0 || i == keysLen-1 {
@@ -275,11 +274,11 @@ func fetchHash(conn redis.Conn, keys []string, writer *bufio.Writer, num int) er
 }
 
 func fetchSet(conn redis.Conn, keys []string, writer *bufio.Writer, num int) error {
-	var setProcess = NewProcess("Store Set Data")
 	keysLen := len(keys)
 	currentNum := 0
+	var setProcess = NewProcess("Store Set Data", keysLen)
 	for i, key := range keys {
-		setProcess.Print((i + 1) * 100 / keysLen)
+		setProcess.Print(i + 1)
 		conn.Send("SMEMBERS", key)
 		currentNum++
 		if currentNum%num == 0 || i == keysLen-1 {

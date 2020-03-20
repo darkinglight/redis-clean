@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"os"
 )
 
 var configFile string
@@ -17,15 +19,15 @@ var iterNum int
 var fetchTypeNum int
 var fetchDataNum int
 var deleteNum int
-var saveKey bool
-var saveData bool
-var deleteData bool
+var enableSaveKey bool
+var enableSaveData bool
+var enableDeleteData bool
 
 func init() {
 	flag.StringVar(&configFile, "config", "config.yaml", "config file location, use absolute path or relative path. make sure your current directory has config.yaml file if use default value.")
-	flag.BoolVar(&saveKey, "saveKey", false, "if save matched keys to file.")
-	flag.BoolVar(&saveData, "saveData", false, "if save data to file.")
-	flag.BoolVar(&deleteData, "deleteData", false, "if delete data from redis by matched keys.")
+	flag.BoolVar(&enableSaveKey, "enableSaveKey", false, "save matched keys to file.")
+	flag.BoolVar(&enableSaveData, "enableSaveData", false, "save data to file.")
+	flag.BoolVar(&enableDeleteData, "enableDeleteData", false, "delete data from redis by matched keys.")
 	flag.Parse()
 }
 
@@ -58,18 +60,36 @@ func main() {
 		fmt.Println("scan keys error:", err)
 		return
 	}
-	if saveKey {
-		fmt.Println("Matched Keys:", keys)
+	if enableSaveKey {
+		storeKeys("keys.txt", keys)
 	}
 
 	//save data
-	if saveData {
+	if enableSaveData {
 		storeData(connSlave, keys, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
 	}
 
 	//delete keys
-	if deleteData {
+	if enableDeleteData {
 		deleteKeys(connMaster, keys, conf.DeleteNum)
 	}
 	fmt.Println("Script Finish.")
+}
+
+func storeKeys(filePath string, keys []string) error {
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	size := len(keys)
+	var keyProcess = NewProcess("Store Keys", size)
+	for i := 0; i < size; i++ {
+		fmt.Fprintln(writer, keys[i])
+		keyProcess.Print(i + 1)
+	}
+	return nil
 }
