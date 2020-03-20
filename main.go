@@ -6,9 +6,26 @@ import (
 )
 
 var configFile string
+var redisMasterHost string
+var redisMasterPort int
+var redisMasterPwd string
+var redisSlaveHost string
+var redisSlavePort string
+var redisSlavePwd string
+var keys string
+var iterNum int
+var fetchTypeNum int
+var fetchDataNum int
+var deleteNum int
+var saveKey bool
+var saveData bool
+var deleteData bool
 
 func init() {
 	flag.StringVar(&configFile, "config", "config.yaml", "config file location, use absolute path or relative path. make sure your current directory has config.yaml file if use default value.")
+	flag.BoolVar(&saveKey, "saveKey", false, "if save matched keys to file.")
+	flag.BoolVar(&saveData, "saveData", false, "if save data to file.")
+	flag.BoolVar(&deleteData, "deleteData", false, "if delete data from redis by matched keys.")
 	flag.Parse()
 }
 
@@ -35,31 +52,23 @@ func main() {
 		defer connMaster.Close()
 	}
 
-	var answer string
-
 	//find keys
 	keys, err := findKeys(connSlave, conf.Keys, conf.IterNum)
 	if err != nil {
 		fmt.Println("scan keys error:", err)
 		return
 	}
-	fmt.Println("Show Matched Keys Detail? [y or n]")
-	fmt.Scan(&answer)
-	if answer == "y" {
+	if saveKey {
 		fmt.Println("Matched Keys:", keys)
 	}
 
 	//save data
-	fmt.Println("Save Data To data.txt Before Delete Keys? [y or n]")
-	fmt.Scan(&answer)
-	if answer == "y" {
+	if saveData {
 		storeData(connSlave, keys, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
 	}
 
 	//delete keys
-	fmt.Println("Delete Match Keys? [y or n]")
-	fmt.Scan(&answer)
-	if answer == "y" {
+	if deleteData {
 		deleteKeys(connMaster, keys, conf.DeleteNum)
 	}
 	fmt.Println("Script Finish.")
