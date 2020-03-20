@@ -142,7 +142,6 @@ func storeData(conn redis.Conn, keys []string, filePath string, typeNum int, dat
 		return err
 	}
 
-	fmt.Println("Store Data Finish")
 	return nil
 }
 
