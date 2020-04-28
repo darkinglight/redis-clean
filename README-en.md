@@ -15,13 +15,13 @@ put the config.yaml on where you execute this tool or you can load config by -co
 4. chagne deleteNum if needed, this is number of elements in redis command `del key1 key2 key3 ...`.
 
 ## Usage
-redis-clean [-config "path/to/configfile.yaml"]
+redis-clean [-config "path/to/configfile.yaml"][-enableDeleteData][-enableSaveKey][-enableSaveData]
 ### find keys
 this script will search redis db by `scan iter match pattern count iterNum`
 ### save data
-you can save data to local file after search all keys if you choose 'y'
+you can save data to local file data.txt after search all keys if you use -enableSaveData
 ### delete keys
-you can delete all searched keys after saving data if you choose 'y'
+you can delete all searched keys after saving data if you use -enableDeleteData
 
 ## Help
 redis-clean -h
@@ -29,6 +29,3 @@ redis-clean -h
 ## Test
 you can use this command produce test redis data   
 `eq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`
-
-## Issue
-1. don't test saving data which is very big.

@@ -22,32 +22,24 @@
 在根目录执行`make`，会生成bin目录，并在bin目录生成linux可执行文件redis-clean和windows可执行文件redis-clean.exe 
 
 ## 使用
-redis-clean [-config "path/to/configfile.yaml"]  
+redis-clean [-config "path/to/configfile.yaml"] [-enableDeleteData] [-enableSaveData] [-enableSaveKey]
 主要流程如下：
 1. 查找redis key：根据配置的正则表达式，使用redis命令`scan iter match pattern count iterNum`进行key的查找
-2. 展示匹配的key：如果输入'y'，列出所有匹配的key
-3. 保存redis数据：如果输入'y'，会保存匹配的key的数据到当前目录的data.txt文件
-4. 删除redis key: 如果输入'y'，会删除匹配的key
+2. 保存匹配的key: -enableSaveKey,保存所有匹配的key到key.txt
+3. 保存redis数据：-enableSaveData，保存匹配的key的数据到当前目录的data.txt文件
+4. 删除redis key: -enableDeleteData,删除匹配的key
 
 实际使用界面如下：
 ```
-@:~/redis-clean$ bin/redis-clean
+$ ./redis-clean -enableSaveKey -enableSaveData
 connect to redis master suucess.
-Search Key By Pattern test* Start:
-Search Key Process: 100%
-Search Key Finish. Total Search Key Number: 100009, Match Key Number: 100000
-Show Matched Keys Detail? [y or n]
-n
-Save Data Before Delete Keys? [y or n]
-y
-Store Data Start:
-Store Data Process: 100%
-Store Data Finish
-Delete Match Keys? [y or n]
-y
-Delete Keys Start:
-Delete Keys Process: 100%
-Delete Keys Finish. Match Size:100000; Delete Size:100000
+connect to redis slave suucess.
+[Search Key By Pattern FUN:*] Process: 100%
+Search Key Finish. Total Search Key Number: 1073269, Match Key Number: 608
+[Store Keys] Process: 100%
+[Store Data Get Key Type] Process: 100%
+[Store String Data] Process: 100%
+[Store Zset Data] Process: 100%
 Script Finish.
 ```
 
@@ -57,7 +49,3 @@ redis-clean -h
 ## 测试
 > 使用命令`seq 200000 | awk '{print "test"$1}' | xargs -n 10000 redis-cli -h localhost -p 6379 mset`添加测试数据  
 > 执行本脚本进行测试
-
-
-## 相关问题
-1. 尚未对大容量的redis数据存储进行测试，可能存在问题。
