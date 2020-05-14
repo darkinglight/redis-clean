@@ -54,30 +54,41 @@ func main() {
 		defer connMaster.Close()
 	}
 
-	//find keys
-	keys, err := findKeys(connSlave, conf.Keys, conf.IterNum)
-	if err != nil {
-		fmt.Println("scan keys error:", err)
-		return
-	}
-	if enableSaveKey {
-		storeKeys("keys.txt", keys)
-	}
+    iter := 0
+    round := 1
+    var keys []string
+    for {
+	    //find keys
+	    keys, iter, round, err = findKeys(connSlave, conf.Keys, conf.IterNum, iter, round)
+	    if err != nil {
+		    fmt.Println("scan keys error:", err)
+		    return
+	    }
 
-	//save data
-	if enableSaveData {
-		storeData(connSlave, keys, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
-	}
+        //save keys
+	    if enableSaveKey {
+		    storeKeys("keys.txt", keys)
+	    }
 
-	//delete keys
-	if enableDeleteData {
-		deleteKeys(connMaster, keys, conf.DeleteNum)
-	}
+	    //save data
+	    if enableSaveData {
+		    storeData(connSlave, keys, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
+	    }
+
+	    //delete keys
+	    if enableDeleteData {
+		    deleteKeys(connMaster, keys, conf.DeleteNum)
+	    }
+
+        if iter == 0 {
+            break
+        }
+    }
 	fmt.Println("Script Finish.")
 }
 
 func storeKeys(filePath string, keys []string) error {
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}

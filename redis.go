@@ -48,23 +48,23 @@ func getRedisConn(conf redisConfig) (redis.Conn, error) {
 	return conn, nil
 }
 
+var matchNum = 0
 /**
  * 根据正则表达式查询redis key
  */
-func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
+func findKeys(conn redis.Conn, pattern string, iterNum int, iter int, round int) ([]string, int, int, error) {
 	//get total key count
 	totalCount, err := redis.Int(conn.Do("DBSIZE"))
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
 
 	var searchProcess = NewProcess(fmt.Sprintf("Search Key By Pattern %s", pattern), totalCount)
 
-	iter := 0
 	var keysMatch, keys []string
-	for i := 1; ; i++ {
+	for {
 		if arr, err := redis.MultiBulk(conn.Do("SCAN", iter, "MATCH", pattern, "COUNT", iterNum)); err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		} else {
 			iter, _ = redis.Int(arr[0], nil)
 			keys, _ = redis.Strings(arr[1], nil)
@@ -72,14 +72,22 @@ func findKeys(conn redis.Conn, pattern string, iterNum int) ([]string, error) {
 		if len(keys) > 0 {
 			keysMatch = append(keysMatch, keys...)
 		}
-		searchProcess.Print(i * iterNum)
+		searchProcess.Print(round * iterNum)
+        round++
 		if iter == 0 {
 			break
 		}
-	}
-	fmt.Printf("Search Key Finish. Total Search Key Number: %d, Match Key Number: %d\n", totalCount, len(keysMatch))
 
-	return keysMatch, nil
+        //check num of fetched keys, handle save and delete if num is big than threshold
+        if len(keysMatch) > 1000000 {
+            fmt.Println()
+            break
+        }
+	}
+    matchNum += len(keysMatch)
+    fmt.Printf("Search Key Finish. Total Key Number: %d, Searched Key Number: %d, Match Key Number: %d\n", totalCount, round * iterNum, matchNum)
+
+	return keysMatch, iter, round, nil
 }
 
 /**
