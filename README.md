@@ -34,23 +34,7 @@ redis-clean [-config "path/to/configfile.yaml"] [-enableDeleteData] [-enableSave
 $ ./redis-clean -enableDeleteData
 connect to redis master suucess.
 connect to redis slave suucess.
-[Search Key By Pattern TASK:ONCE:1*] Process: 2%
-Search Key Finish. Total Key Number: 135219134, Searched Key Number: 3020000, Match Key Number: 1002680
-[Delete Keys] Process: 100%
-Delete Keys Finish. Match Size:1002680; Delete Size:1002680
-[Search Key By Pattern TASK:ONCE:1*] Process: 4%
-Search Key Finish. Total Key Number: 134216454, Searched Key Number: 6020000, Match Key Number: 2003671
-[Delete Keys] Process: 100%
-Delete Keys Finish. Match Size:1000991; Delete Size:1000991
-[Search Key By Pattern TASK:ONCE:1*] Process: 6%
-Search Key Finish. Total Key Number: 133215466, Searched Key Number: 9020000, Match Key Number: 3004421
-[Delete Keys] Process: 100%
-Delete Keys Finish. Match Size:1000750; Delete Size:1000750
-[Search Key By Pattern TASK:ONCE:1*] Process: 9%
-Search Key Finish. Total Key Number: 132214719, Searched Key Number: 12020000, Match Key Number: 4006669
-[Delete Keys] Process: 100%
-Delete Keys Finish. Match Size:1002248; Delete Size:1002248
-[Search Key By Pattern TASK:ONCE:1*] Process: 10%   
+[Search TASK:ONCE:6:*] Process: 66.5% Search Keys: 53070000  Match Key: 119539  Save Keys: 0  Save Data: 0  Delete: 119400
 ```
 
 ## 帮助

@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+    "time"
+    "sync"
 )
 
 var configFile string
@@ -54,12 +56,20 @@ func main() {
 		defer connMaster.Close()
 	}
 
+	var searchProcess = NewProcess(fmt.Sprintf("Search %s", conf.Keys))
+
+    var wg sync.WaitGroup
+    wg.Add(2)
+
 	//find keys
     keysChannel := make(chan string, 100)
+	go findKeys(connSlave, conf.Keys, conf.IterNum, keysChannel, searchProcess, &wg)
+
     saveKeyChannel := make(chan string)
     saveDataChannel := make(chan string)
     deleteChannel := make(chan string)
     go func() {
+        defer wg.Done()
         for key := range keysChannel {
 	        if enableSaveKey {
                 saveKeyChannel <- key
@@ -88,10 +98,25 @@ func main() {
 
 	//delete keys
 	if enableDeleteData {
-	    go deleteKeys(connMaster, deleteChannel, conf.DeleteNum)
+	    go deleteKeys(connMaster, deleteChannel, conf.DeleteNum, searchProcess, &wg)
 	}
 
-	findKeys(connSlave, conf.Keys, conf.IterNum, keysChannel)
+    //show process
+    done := make(chan bool)
+    ticker := time.NewTicker(1000 * time.Millisecond)
+    go func() {
+        for {
+            select {
+            case <-done:
+                return
+            case <-ticker.C:
+                searchProcess.Print()
+            }
+        }
+    }()
+
+    wg.Wait()
+    done <- true
 	fmt.Println("Script Finish.")
 }
 
