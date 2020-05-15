@@ -7,6 +7,7 @@ import (
 	"os"
     "time"
     "sync"
+    "context"
 )
 
 var configFile string
@@ -102,22 +103,28 @@ func main() {
 	}
 
     //show process
-    done := make(chan bool)
-    ticker := time.NewTicker(1000 * time.Millisecond)
-    go func() {
-        for {
-            select {
-            case <-done:
-                return
-            case <-ticker.C:
-                searchProcess.Print()
-            }
-        }
-    }()
+    ctx, cancel := context.WithCancel(context.Background())
+    go showProcess(ctx, searchProcess)
 
+    //wait search, save, delete goroutine finish
     wg.Wait()
-    done <- true
+
+    //notify stop show process
+    cancel()
+
 	fmt.Println("Script Finish.")
+}
+
+func showProcess(ctx context.Context, p *process) {
+    ticker := time.NewTicker(1000 * time.Millisecond)
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            p.Print()
+        }
+    }
 }
 
 func storeKeys(filePath string, keys <-chan string) {

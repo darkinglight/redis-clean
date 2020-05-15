@@ -54,7 +54,7 @@ func (p *process) Print() {
 	}
 	if percent > p.Percent {
 		p.Percent = percent
-        fmt.Printf("[%s] Process: %.1f%% Search Keys: %d  Match Key: %d  Save Keys: %d  Save Data: %d  Delete: %d\r", p.Name, p.Percent, p.SearchNum, p.MatchNum, p.SaveKeyNum, p.SaveDataNum, p.DeleteNum)
+        fmt.Printf("[%s] Process: %.2f%% Total Keys: %d  Search Keys: %d  Match Key: %d  Save Keys: %d  Save Data: %d  Delete: %d\r", p.Name, p.Percent, p.TotalNum, p.SearchNum, p.MatchNum, p.SaveKeyNum, p.SaveDataNum, p.DeleteNum)
 		if percent == 100 {
 			fmt.Println()
 		}
