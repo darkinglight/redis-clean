@@ -9,7 +9,7 @@ import (
  */
 type process struct {
 	Name  string
-	Value int
+	Value float64
 	Total int
 }
 
@@ -23,13 +23,13 @@ func NewProcess(name string, total int) *process {
 }
 
 func (p *process) Print(current int) {
-	currentProcess := current * 100 / p.Total
+	currentProcess := float64(current) * 100 / float64(p.Total)
 	if currentProcess > 100 {
 		currentProcess = 100
 	}
 	if currentProcess > p.Value {
 		p.Value = currentProcess
-		fmt.Printf("[%s] Process: %d%%\r", p.Name, p.Value)
+		fmt.Printf("[%s] Process: %.2f%%\r", p.Name, p.Value)
 		if currentProcess == 100 {
 			fmt.Println()
 		}

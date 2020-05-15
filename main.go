@@ -54,53 +54,57 @@ func main() {
 		defer connMaster.Close()
 	}
 
-    iter := 0
-    round := 1
-    var keys []string
-    for {
-	    //find keys
-	    keys, iter, round, err = findKeys(connSlave, conf.Keys, conf.IterNum, iter, round)
-	    if err != nil {
-		    fmt.Println("scan keys error:", err)
-		    return
-	    }
-
-        //save keys
-	    if enableSaveKey {
-		    storeKeys("keys.txt", keys)
-	    }
-
-	    //save data
-	    if enableSaveData {
-		    storeData(connSlave, keys, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
-	    }
-
-	    //delete keys
-	    if enableDeleteData {
-		    deleteKeys(connMaster, keys, conf.DeleteNum)
-	    }
-
-        if iter == 0 {
-            break
+	//find keys
+    keysChannel := make(chan string, 100)
+	go findKeys(connSlave, conf.Keys, conf.IterNum, keysChannel)
+    saveKeyChannel := make(chan string)
+    saveDataChannel := make(chan string)
+    deleteChannel := make(chan string)
+    go func() {
+        for key := range keysChannel {
+	        if enableSaveKey {
+                saveKeyChannel <- key
+	        }
+	        if enableSaveData {
+                saveDataChannel <- key
+	        }
+	        if enableDeleteData {
+                deleteChannel <- key
+	        }
         }
-    }
+        close(saveKeyChannel)
+        close(saveDataChannel)
+        close(deleteChannel)
+    }()
+
+    //save keys
+	if enableSaveKey {
+	    storeKeys("keys.txt", saveKeyChannel)
+	}
+
+	//save data
+	if enableSaveData {
+	    //storeData(connSlave, keys, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
+	}
+
+	//delete keys
+	if enableDeleteData {
+	    //deleteKeys(connMaster, keys, conf.DeleteNum)
+	}
 	fmt.Println("Script Finish.")
 }
 
-func storeKeys(filePath string, keys []string) error {
+func storeKeys(filePath string, keys <-chan string) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		return err
+        fmt.Println(err)
+		return
 	}
 	defer file.Close()
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
-	size := len(keys)
-	var keyProcess = NewProcess("Store Keys", size)
-	for i := 0; i < size; i++ {
-		fmt.Fprintln(writer, keys[i])
-		keyProcess.Print(i + 1)
+    for key := range keys {
+		fmt.Fprintln(writer, key)
 	}
-	return nil
 }
