@@ -111,10 +111,11 @@ func main() {
 
     //notify stop show process
     cancel()
-
-	fmt.Println("Script Finish.")
 }
 
+/**
+ * 进度统计
+ */
 func showProcess(ctx context.Context, p *process) {
     ticker := time.NewTicker(1000 * time.Millisecond)
     for {
