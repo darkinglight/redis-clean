@@ -93,40 +93,67 @@ func findKeys(conn redis.Conn, pattern string, iterNum int, keyChannel chan<- st
 /**
  * 删除redis key
  */
-func deleteKeys(conn redis.Conn, keys []string, nums int) error {
-	size := len(keys)
-	var totalDeleteNum int
-	var part []string
-	var deleteProcess = NewProcess("Delete Keys", size)
-	for i := 0; i*nums < size; i++ {
-		if (i+1)*nums > size {
-			part = keys[i*nums:]
-		} else {
-			part = keys[i*nums : (i+1)*nums]
-		}
-		deleteNum, err := redis.Int(conn.Do("DEL", redis.Args{}.AddFlat(part)...))
-		if err != nil {
-			return err
-		}
-		totalDeleteNum += deleteNum
-		deleteProcess.Print(totalDeleteNum)
+func deleteKeys(conn redis.Conn, keys <-chan string, nums int) {
+	var argNum, totalDeleteNum int
+    args := redis.Args{}
+    for key := range keys {
+		args = args.Add(key)
+        argNum++
+        if argNum == nums {
+		    deleteNum, err := redis.Int(conn.Do("DEL", args...))
+		    if err != nil {
+                fmt.Println(err)
+                return
+		    }
+		    totalDeleteNum += deleteNum
+            args = redis.Args{}
+            argNum = 0
+	        fmt.Printf("Delete Keys. Delete Size:%d\n", deleteNum)
+        }
 	}
-	fmt.Printf("Delete Keys Finish. Match Size:%d; Delete Size:%d\n", size, totalDeleteNum)
-	return nil
+    deleteNum, err := redis.Int(conn.Do("DEL", args...))
+    if err != nil {
+        fmt.Println(err)
+    } else {
+        totalDeleteNum += deleteNum
+    }
+	fmt.Printf("Delete Keys Finish. Delete Size:%d\n", totalDeleteNum)
 }
 
 /**
  * 保存redis数据
  */
-func storeData(conn redis.Conn, keys []string, filePath string, typeNum int, dataNum int) error {
+func storeData(conn redis.Conn, keyChan <-chan string, filePath string, typeNum int, dataNum int) {
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return err
+        fmt.Println(err)
+		return
 	}
 	defer file.Close()
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
+    var keys []string
+    for key := range keyChan {
+        keys = append(keys, key)
+        if len(keys) == dataNum {
+            err = storeDataOnce(conn, keys, writer, typeNum, dataNum)
+            if err != nil {
+                fmt.Println(err)
+                return
+            }
+            keys = []string{}
+        }
+    }
+    if len(keys) > 0 {
+        err = storeDataOnce(conn, keys, writer, typeNum, dataNum)
+        if err != nil {
+            fmt.Println(err)
+        }
+    }
+}
+
+func storeDataOnce(conn redis.Conn, keys []string, writer *bufio.Writer, typeNum int, dataNum int) error{
 	//get type of all keys
 	stringKeys, listKeys, zsetKeys, hashKeys, setKeys, err := getType(conn, keys, typeNum)
 	if err != nil {
@@ -149,8 +176,8 @@ func storeData(conn redis.Conn, keys []string, filePath string, typeNum int, dat
 	if err = fetchSet(conn, setKeys, writer, dataNum); err != nil {
 		return err
 	}
-
-	return nil
+    
+    return nil
 }
 
 func getType(conn redis.Conn, keys []string, num int) ([]string, []string, []string, []string, []string, error) {

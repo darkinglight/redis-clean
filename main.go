@@ -56,7 +56,6 @@ func main() {
 
 	//find keys
     keysChannel := make(chan string, 100)
-	go findKeys(connSlave, conf.Keys, conf.IterNum, keysChannel)
     saveKeyChannel := make(chan string)
     saveDataChannel := make(chan string)
     deleteChannel := make(chan string)
@@ -79,18 +78,20 @@ func main() {
 
     //save keys
 	if enableSaveKey {
-	    storeKeys("keys.txt", saveKeyChannel)
+	    go storeKeys("keys.txt", saveKeyChannel)
 	}
 
 	//save data
 	if enableSaveData {
-	    //storeData(connSlave, keys, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
+	    go storeData(connSlave, saveDataChannel, "data.txt", conf.FetchTypeNum, conf.FetchDataNum)
 	}
 
 	//delete keys
 	if enableDeleteData {
-	    //deleteKeys(connMaster, keys, conf.DeleteNum)
+	    go deleteKeys(connMaster, deleteChannel, conf.DeleteNum)
 	}
+
+	findKeys(connSlave, conf.Keys, conf.IterNum, keysChannel)
 	fmt.Println("Script Finish.")
 }
 
